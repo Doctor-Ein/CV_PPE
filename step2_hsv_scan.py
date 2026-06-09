@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gc
 import json
 from dataclasses import asdict
 from pathlib import Path
@@ -10,38 +11,39 @@ from typing import Any
 from exp_manager import DATA_YAML_PATH, MODEL_NAME, find_metric_value, validate_dataset
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-EXPERIMENT_DIR = PROJECT_ROOT / "experiments" / "step2_hsv"
-PLANS_DIR = PROJECT_ROOT / "experiments" / "plans"
-SUMMARY_CSV_PATH = EXPERIMENT_DIR / "step2_hsv_summary.csv"
+EXPERIMENT_DIR = PROJECT_ROOT / "experiments" / "experiment2"
+PLANS_DIR = EXPERIMENT_DIR / "plans"
+SUMMARY_CSV_PATH = EXPERIMENT_DIR / "step2_summary.csv"
 
 DEFAULT_SCAN_VALUES: dict[str, list[float]] = {
-    "hsv_h": [0.0, 0.0075, 0.015, 0.0225, 0.03],
-    "hsv_s": [0.0, 0.35, 0.7, 1.05, 1.4],
-    "hsv_v": [0.0, 0.2, 0.4, 0.6, 0.8],
-    "bgr": [0.0, 0.1, 0.2, 0.3, 0.4],
+    "hsv_h": [0.0, 0.01, 0.02, 0.03],
+    "hsv_s": [0.0, 0.35, 0.7, 1.05],
+    "hsv_v": [0.0, 0.2, 0.4, 0.6],
+    "bgr": [0.0, 0.1, 0.2, 0.3],
 }
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Step 2: single-variable color/illumination augmentation scan (YOLOv8n only).\n"
-            "Default behavior scans 4 params with built-in recommended values."
+            "Step 2: single-parameter color/illumination scan (YOLOv8n only).\n"
+            "Each execution scans one parameter with built-in recommended values."
         )
     )
     parser.add_argument(
         "--param",
+        required=True,
         choices=sorted(DEFAULT_SCAN_VALUES.keys()),
-        help="Scan only one parameter. If omitted, scans all built-in parameters.",
+        help="Which single parameter to scan in this execution.",
     )
     parser.add_argument(
         "--values",
         help="Comma-separated values to scan for --param. If omitted, uses built-in values.",
     )
-    parser.add_argument("--epochs", type=int, default=15, help="Training epochs per run.")
+    parser.add_argument("--epochs", type=int, default=10, help="Training epochs per run.")
     parser.add_argument("--imgsz", type=int, default=640, help="Training image size.")
     parser.add_argument("--batch", type=int, default=16, help="Training batch size.")
-    parser.add_argument("--workers", type=int, default=8, help="Dataloader workers.")
+    parser.add_argument("--workers", type=int, default=4, help="Dataloader workers.")
     parser.add_argument(
         "--device",
         default="",
@@ -89,9 +91,9 @@ def slugify_value(value: float) -> str:
 
 def export_plan(run_name: str, train_args: dict[str, Any], dataset_report: Any) -> Path:
     PLANS_DIR.mkdir(parents=True, exist_ok=True)
-    plan_path = PLANS_DIR / f"step2-hsv_{run_name}.json"
+    plan_path = PLANS_DIR / f"step2_{run_name}.json"
     payload = {
-        "stage": "step2-hsv",
+        "stage": "step2-single-param",
         "model": MODEL_NAME,
         "data_yaml": str(DATA_YAML_PATH.resolve()),
         "train_args": train_args,
@@ -168,7 +170,7 @@ def plot_trend(param: str) -> Path | None:
     plt.plot(xs, ys, marker="o")
     plt.xlabel(param)
     plt.ylabel("mAP50")
-    plt.title(f"Step2 HSV scan: {param}")
+    plt.title(f"Step2 scan: {param}")
     plt.grid(True, alpha=0.3)
     plot_path = EXPERIMENT_DIR / f"trend_{param}.png"
     plt.tight_layout()
@@ -198,22 +200,31 @@ def build_train_args(args: argparse.Namespace, run_name: str, param: str, value:
     return train_args
 
 
+def release_runtime_memory(model: Any | None = None) -> None:
+    del model
+    gc.collect()
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except Exception:
+        pass
+
+
 def run() -> None:
     args = parse_args()
-    if args.values and not args.param:
-        raise ValueError("--values requires --param")
-    if args.param:
-        scan_plan = {
-            args.param: parse_values(args.values) if args.values else DEFAULT_SCAN_VALUES[args.param]
-        }
-    else:
-        scan_plan = DEFAULT_SCAN_VALUES
+    scan_plan = {
+        args.param: parse_values(args.values) if args.values else DEFAULT_SCAN_VALUES[args.param]
+    }
 
     dataset_report = validate_dataset(DATA_YAML_PATH, strict_data=args.strict_data)
     print("Dataset validation passed.")
     print(f"Data YAML : {DATA_YAML_PATH.resolve()}")
     print(f"Model     : {MODEL_NAME}")
     print(f"Epochs    : {args.epochs}")
+    print(f"Workers   : {args.workers}")
+    print(f"Output    : {EXPERIMENT_DIR.resolve()}")
     print(f"Scan plan : {scan_plan}")
 
     for param, values in scan_plan.items():
@@ -239,7 +250,7 @@ def run() -> None:
             save_dir = Path(result.save_dir)
             metrics = extract_last_metrics(save_dir / "results.csv")
             summary_row = {
-                "stage": "step2-hsv",
+                "stage": "step2-single-param",
                 "param": param,
                 "value": str(value),
                 "run_name": run_name,
@@ -252,6 +263,7 @@ def run() -> None:
             }
             append_summary_row(summary_row)
             print(f"Saved summary row to {SUMMARY_CSV_PATH}")
+            release_runtime_memory(model)
 
         if args.execute and not args.no_plot:
             plot_path = plot_trend(param)
