@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from step2_analyze import DEFAULT_EXPERIMENT2_DIR, SUPPORTED_PARAMS, collect_records as collect_step2_records
+from step2_fine_scan import EXPERIMENT_DIR as DEFAULT_EXPERIMENT2_FINE_DIR
 from step3_analyze import (
     DEFAULT_EXPERIMENT3_DIR,
     SUPPORTED_GROUPS,
@@ -21,14 +22,14 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Generate summary plots for Step 2 and Step 3 experiments:\n"
-            "1) Step 2 parameter-value vs mAP50-95 line charts.\n"
+            "1) Step 2 parameter-value vs mAP50-95 line charts (one image per parameter).\n"
             "2) Step 3 grouped bar charts comparing group bests and final compose."
         )
     )
     parser.add_argument(
         "--experiment2-root",
-        default=str(DEFAULT_EXPERIMENT2_DIR),
-        help="Path to experiment2 directory.",
+        default=str(DEFAULT_EXPERIMENT2_FINE_DIR),
+        help="Path to Step 2 directory. Defaults to fine-grained experiment2_fine.",
     )
     parser.add_argument(
         "--experiment3-root",
@@ -51,11 +52,11 @@ def ensure_matplotlib():
     return plt
 
 
-def plot_step2_map95_curves(experiment2_root: Path, outdir: Path) -> Path | None:
+def plot_step2_map95_curves(experiment2_root: Path, outdir: Path) -> list[Path]:
     plt = ensure_matplotlib()
     records = collect_step2_records(experiment2_root)
     if not records:
-        return None
+        return []
 
     grouped: dict[str, list[tuple[float, float]]] = {param: [] for param in SUPPORTED_PARAMS}
     for record in records:
@@ -64,19 +65,17 @@ def plot_step2_map95_curves(experiment2_root: Path, outdir: Path) -> Path | None
         grouped[record.param].append((record.value, record.map50_95))
 
     if not any(grouped.values()):
-        return None
+        return []
 
-    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-    axes_list = list(axes.flatten())
-    for idx, param in enumerate(SUPPORTED_PARAMS):
-        ax = axes_list[idx]
+    outdir.mkdir(parents=True, exist_ok=True)
+    output_paths: list[Path] = []
+    for param in SUPPORTED_PARAMS:
         points = sorted(grouped[param], key=lambda item: item[0])
         if not points:
-            ax.set_title(f"{param} (no data)")
-            ax.axis("off")
             continue
         xs = [item[0] for item in points]
         ys = [item[1] for item in points]
+        fig, ax = plt.subplots(figsize=(7, 4.5))
         ax.plot(xs, ys, marker="o", linewidth=1.8)
         for x, y in points:
             ax.annotate(f"{y:.4f}", (x, y), textcoords="offset points", xytext=(0, 6), ha="center", fontsize=8)
@@ -84,14 +83,12 @@ def plot_step2_map95_curves(experiment2_root: Path, outdir: Path) -> Path | None
         ax.set_xlabel(param)
         ax.set_ylabel("mAP50-95")
         ax.grid(True, alpha=0.3)
-
-    fig.suptitle("Step 2 Single-Parameter Scan", fontsize=14)
-    fig.tight_layout()
-    outdir.mkdir(parents=True, exist_ok=True)
-    out_path = outdir / "step2_param_vs_map50_95.png"
-    fig.savefig(out_path, dpi=180, bbox_inches="tight")
-    plt.close(fig)
-    return out_path
+        fig.tight_layout()
+        out_path = outdir / f"step2_{param}_vs_map50_95.png"
+        fig.savefig(out_path, dpi=180, bbox_inches="tight")
+        plt.close(fig)
+        output_paths.append(out_path)
+    return output_paths
 
 
 def plot_step3_group_bars(experiment3_root: Path, outdir: Path, objective: str) -> Path | None:
@@ -160,18 +157,25 @@ def main() -> None:
     experiment3_root = Path(args.experiment3_root).expanduser().resolve()
     outdir = Path(args.outdir).expanduser().resolve()
 
+    # Prefer the fine-grained Step 2 directory when present, otherwise fall back to the original Step 2 root.
+    if not experiment2_root.exists() or not collect_step2_records(experiment2_root):
+        fallback_root = Path(DEFAULT_EXPERIMENT2_DIR).expanduser().resolve()
+        if fallback_root != experiment2_root and fallback_root.exists():
+            experiment2_root = fallback_root
+
     print(f"Experiment2 : {experiment2_root}")
     print(f"Experiment3 : {experiment3_root}")
     print(f"Output dir  : {outdir}")
 
     try:
-        step2_plot = plot_step2_map95_curves(experiment2_root, outdir)
+        step2_plots = plot_step2_map95_curves(experiment2_root, outdir)
     except RuntimeError as exc:
         print(exc)
         print("Install it first, for example: `pip install matplotlib`")
         return
-    if step2_plot:
-        print(f"Wrote: {step2_plot}")
+    if step2_plots:
+        for path in step2_plots:
+            print(f"Wrote: {path}")
     else:
         print("Skip Step 2 plot: no usable experiment2 records found.")
 
