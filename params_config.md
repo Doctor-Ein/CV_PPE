@@ -35,7 +35,26 @@
 ---
 
 ## G2 参数组配置结论
-即我们第二阶段得到的结果，其值为：
+即我们第二阶段得到的结果，分析程序输出为：
+
+Experiment2: /home/aoya/workspace/CV_PPE/experiments/experiment2
+Runs found : 12
+Metric     : map50
+hsv_s: recommend 1.0 (map50=0.55093)  dir=/home/aoya/workspace/CV_PPE/experiments/experiment2/hsv_scan_hsv_s_1
+hsv_v: recommend 0.2 (map50=0.54437)  dir=/home/aoya/workspace/CV_PPE/experiments/experiment2/hsv_scan_hsv_v_0p2
+bgr: recommend 0.0 (map50=0.57157)  dir=/home/aoya/workspace/CV_PPE/experiments/experiment2/hsv_scan_bgr_0p3
+Wrote: /home/aoya/workspace/CV_PPE/experiments/experiment2/step2_recommendations.json
+Wrote: /home/aoya/workspace/CV_PPE/experiments/experiment2/step2_recommendations.csv
+
+(.venv) aoya@DESKTOP-UN42JV2:~/workspace/CV_PPE$ python step2_analyze.py  --metric map50_95
+Experiment2: /home/aoya/workspace/CV_PPE/experiments/experiment2
+Runs found : 12
+Metric     : map50_95
+hsv_s: recommend 0.35 (map50_95=0.27711)  dir=/home/aoya/workspace/CV_PPE/experiments/experiment2/hsv_scan_hsv_s_0p35-2
+hsv_v: recommend 0.4 (map50_95=0.27434)  dir=/home/aoya/workspace/CV_PPE/experiments/experiment2/hsv_scan_hsv_v_0p4
+bgr: recommend 0.0 (map50_95=0.27644)  dir=/home/aoya/workspace/CV_PPE/experiments/experiment2/hsv_scan_bgr_0p3
+Wrote: /home/aoya/workspace/CV_PPE/experiments/experiment2/step2_recommendations.json
+Wrote: /home/aoya/workspace/CV_PPE/experiments/experiment2/step2_recommendations.csv
 
 ## G3 参数组配置结论
 
