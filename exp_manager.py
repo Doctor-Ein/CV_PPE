@@ -20,13 +20,13 @@ class ExperimentManager:
         # Default training parameters for this study
         train_args = {
             'data': self.data_yaml,
-            'epochs': 20,  # Reduced for faster verification of the entire flow
+            'epochs': 30,  # Optimized for 5060, balanced speed/quality
             'imgsz': 640,
-            'batch': 16,
+            'batch': 32,   # Increased for RTX 5060
             'project': self.results_dir,
             'name': name,
             'exist_ok': True,
-            'device': 'cpu', # Explicitly use cpu for this env
+            'device': 0,    # Use GPU 0 (RTX 5060)
         }
         train_args.update(kwargs)
         

@@ -1,5 +1,5 @@
-# Construction-PPE dataset (Matching actual data labels)
-path: /Users/xlx/Desktop/资料/25-2春学期/图像处理与视觉/大作业/yolo_augment_search/datasets/construction-ppe
+# Construction-PPE dataset
+path: datasets/construction-ppe # Relative to project root
 train: images/train
 val: images/val
 test: images/test
