@@ -1,5 +1,5 @@
 # Construction-PPE dataset
-path: datasets/construction-ppe # Relative to project root
+path: datasets/ # Relative to project root
 train: images/train
 val: images/val
 test: images/test
