@@ -32,7 +32,7 @@ def parse_args() -> argparse.Namespace:
         default=str(DEFAULT_RECOMMENDATIONS_PATH),
         help="Path to step3_recommendations.json produced by step3_analyze.py.",
     )
-    parser.add_argument("--epochs", type=int, default=10, help="Training epochs.")
+    parser.add_argument("--epochs", type=int, default=100, help="Training epochs.")
     parser.add_argument("--imgsz", type=int, default=640, help="Training image size.")
     parser.add_argument("--batch", type=int, default=16, help="Training batch size.")
     parser.add_argument("--workers", type=int, default=4, help="Dataloader workers.")

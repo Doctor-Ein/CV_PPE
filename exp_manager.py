@@ -71,7 +71,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Actually launch training. Without this flag, only validation and plan export run.",
     )
-    parser.add_argument("--epochs", type=int, default=15, help="Baseline training epochs.")
+    parser.add_argument("--epochs", type=int, default=10, help="Baseline training epochs.")
     parser.add_argument("--imgsz", type=int, default=640, help="Training image size.")
     parser.add_argument("--batch", type=int, default=16, help="Training batch size.")
     parser.add_argument("--workers", type=int, default=8, help="Dataloader workers.")
