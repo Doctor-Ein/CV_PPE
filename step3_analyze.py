@@ -12,7 +12,7 @@ from exp_manager import find_metric_value
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_EXPERIMENT3_DIR = PROJECT_ROOT / "experiments" / "experiment3"
-SUPPORTED_GROUPS = ("g1", "g2", "g3", "g4", "g5")
+SUPPORTED_GROUPS = ("g1", "g2", "g3", "g4", "g5", "final_compose")
 SUPPORTED_OBJECTIVES = ("map50", "map50_95")
 
 
@@ -260,4 +260,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
