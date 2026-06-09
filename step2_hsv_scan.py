@@ -17,7 +17,7 @@ SUMMARY_CSV_PATH = EXPERIMENT_DIR / "step2_summary.csv"
 
 DEFAULT_SCAN_VALUES: dict[str, list[float]] = {
     "hsv_h": [0.0, 0.01, 0.02, 0.03],
-    "hsv_s": [0.0, 0.35, 0.7, 1.05],
+    "hsv_s": [0.0, 0.35, 0.7, 1.00],
     "hsv_v": [0.0, 0.2, 0.4, 0.6],
     "bgr": [0.0, 0.1, 0.2, 0.3],
 }
